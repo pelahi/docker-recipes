@@ -3,7 +3,22 @@
 ARG BASE_IMAGE="pawsey:askap-astrodeps"
 FROM ${BASE_IMAGE}
 
-# need to pass ssh args
+# Record useful metadata: See https://docs.docker.com/config/labels-custom-metadata/
+LABEL org.opencontainers.image.created="2023-02"
+LABEL org.opencontainers.image.authors="Pascal Jahan Elahi <pascaljelahi@gmail.com>"
+LABEL org.opencontainers.image.documentation="https://github.com/"
+LABEL org.opencontainers.image.source="https://github.com/pelahi/docker-recipes/spack-base/"
+LABEL org.opencontainers.image.vendor="Pawsey Supercomputing Research Centre"
+LABEL org.opencontainers.image.licenses="GNU GPL3.0"
+LABEL org.opencontainers.image.title="tostool"
+LABEL org.opencontainers.image.description="The image provides ASKAP TOS tools \
+needed by ASKAPpipeline to run various services and \
+askap-python tools." 
+LABEL org.opencontainers.image.base.name="askap/askaptos"
+
+# ssh information passed as build arguments 
+# example: here directory where key ssh information stored is in $HOME/.ssh
+# --build-arg SSH_KEY_PRI="$(more ~/.ssh/id_rsa)" --build-arg SSH_KEY_PUB="$(more ~/.ssh/id_rsa.pub)" --build-arg SSH_KNOWNHOSTS="$(more ~/.ssh/known_hosts)"
 ARG SSH_KEY_PRI
 ARG SSH_KEY_PUB
 ARG SSH_KNOWNHOSTS 
@@ -19,19 +34,6 @@ ARG PY3VERSION=10
 ARG BUILD_DIR=/tmp/
 ARG INSTALL_DIR=/usr/local/askappy/
 WORKDIR /
-
-# Record useful metadata: See https://docs.docker.com/config/labels-custom-metadata/
-LABEL org.opencontainers.image.created="2023-02"
-LABEL org.opencontainers.image.authors="Pascal Jahan Elahi <pascaljelahi@gmail.com>"
-LABEL org.opencontainers.image.documentation="https://github.com/"
-LABEL org.opencontainers.image.source="https://github.com/pelahi/docker-recipes/spack-base/"
-LABEL org.opencontainers.image.vendor="Pawsey Supercomputing Research Centre"
-LABEL org.opencontainers.image.licenses="GNU GPL3.0"
-LABEL org.opencontainers.image.title="tostool"
-LABEL org.opencontainers.image.description="The image provides ASKAP TOS tools \
-needed by ASKAPpipeline to run various services and \
-askap-python tools." 
-LABEL org.opencontainers.image.base.name="askap/askaptos"
 
 # Set default python to python3:
 # this is specific to ubuntu

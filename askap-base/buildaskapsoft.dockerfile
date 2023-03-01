@@ -31,6 +31,9 @@ RUN echo "Silly fix" \
     && cp -r ${gsldir}/include/gsl /usr/include/ \
     && echo "Done"
 
+# ssh information passed as build arguments 
+# example: here directory where key ssh information stored is in $HOME/.ssh
+# --build-arg SSH_KEY_PRI="$(more ~/.ssh/id_rsa)" --build-arg SSH_KEY_PUB="$(more ~/.ssh/id_rsa.pub)" --build-arg SSH_KNOWNHOSTS="$(more ~/.ssh/known_hosts)"
 ARG SSH_KEY_PRI
 ARG SSH_KEY_PUB
 ARG SSH_KNOWNHOSTS 
