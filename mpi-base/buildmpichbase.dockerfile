@@ -6,7 +6,7 @@
 ARG OS_VERSION="20.04"
 FROM ubuntu:${OS_VERSION}
 
-LABEL org.opencontainers.image.created="2022-10"
+LABEL org.opencontainers.image.created="2023-02"
 LABEL org.opencontainers.image.authors="Pascal Jahan Elahi <pascaljelahi@gmail.com>"
 LABEL org.opencontainers.image.documentation="https://github.com/"
 LABEL org.opencontainers.image.source="https://github.com/pelahi/docker-recipes/mpi-base/"
@@ -105,6 +105,9 @@ RUN mkdir -p /opt/ \
       && make MPICXX=mpic++ \
       && cd ../../examples/openmp \
       && make CXX=g++ bin/openmpvec_cpp
+
+# add mpi4py in the container 
+RUN pip install mpi4py
 
 # and copy the recipe into the docker recipes directory
 RUN mkdir -p /opt/docker-recipes/
