@@ -32,32 +32,64 @@ RUN echo "Starting apt-get installs" \
 # note that to build optimized archiecture specific
 # builds try something like 
 # docker build --build-arg SPACK_CPPFLAGS="-O3" --build-arg SPACK_CFLAGS="-O3" --build-arg SPACK_FFLAGS="-O3" --build-arg SPACK_TARGET="zen3"
-ARG SPACK_CPPFLAGS="-O0"
-ARG SPACK_CFLAGS="-O0"
-ARG SPACK_FFLAGS="-O0"
+# default values are little optimisation and for all x86_64 targets
+ARG SPACK_CPPFLAGS="-O2 -fPIC"
+ARG SPACK_CFLAGS="-O2 -fPIC"
+ARG SPACK_FFLAGS="-O2 -fPIC"
 ARG SPACK_TARGET="x86_64"
+ARG spack_compilerspec="target=${SPACK_TARGET} cppflags=='${SPACK_CPPFLAGS}' cflags=='${SPACK_CFLAGS}' fflags=='${SPACK_FFLAGS}' " 
+# store the build flags in the metadata 
+LABEL org.opencontainers.image.buildflags="${spack_compilerspec}"
 
-RUN echo "Building astro packages with spack" \
-    && export compilerspec="%gcc target=${SPACK_TARGET} cppflags='${SPACK_CPPFLAGS}' cflags='${SPACK_CFLAGS}' fflags='${SPACK_FFLAGS}' " \
-    # install packages 
-    && /root/spack/spack/bin/spack install -j16 \
-        openblas@0.3.15 threads=openmp ${compilerspec}\
-        fftw@3.3.9 +openmp precision=float,double,long_double ${compilerspec} \
-        gsl@2.6 ${compilerspec} \
-        hdf5@1.10.8 +hl api=v110 ${compilerspec} \
-        boost@1.80.0 +mpi +numpy +python +pic +system +thread +program_options +filesystem +signals +regex +chrono cxxstd=98 ${compilerspec} \
-        cfitsio ${compilerspec} \
-        wcslib +cfitsio ${compilerspec} \
-        cppzmq ${compilerspec} \
-        libzmq ${compilerspec} \
-        apr ${compilerspec} \
-        apr-util ${compilerspec} \
-        cppunit ${compilerspec} \
-        log4cxx cxxstd=11 ^boost@1.80.0 +mpi +numpy +python +pic +system +thread +program_options +filesystem +signals +regex +chrono cxxstd=98 ${compilerspec} \
-        mcpp ${compilerspec} \
-        xerces-c ${compilerspec} \
-    && /root/spack/spack/bin/spack install -j16 \
-        imagemagick ${compilerspec}\
+ARG spack_install="/root/spack/spack/bin/spack install -j16 --reuse "
+RUN echo "Building packages with spack" \
+    # run spack find given new sets of packages installed
+    && /root/spack/spack/bin/spack external find \
+    # install packages. For layering try splitting 
+    # build into math and then astro packages 
+    && ${spack_install} \
+        readline ${spack_compilerspec} \
+        bzip2 ${spack_compilerspec} \
+        openssl ${spack_compilerspec} \
+    && ${spack_install} \
+        openblas@0.3.15 threads=openmp ${spack_compilerspec}\
+    && ${spack_install} \
+        fftw@3.3.9 +openmp precision=float,double,long_double ${spack_compilerspec} \
+    && ${spack_install} \
+        gsl@2.6 ${spack_compilerspec} \
+    && ${spack_install} \
+        hdf5@1.10.8 +hl api=v110 ${spack_compilerspec} \
+    && echo "Finished"
+RUN /root/spack/spack/bin/spack find -lvdf
+RUN echo " Building astro packages " \
+    && ${spack_install} \
+        boost@1.80.0 +mpi +numpy +python +pic +system +thread +program_options +filesystem +signals +regex +chrono cxxstd=98 ${spack_compilerspec} \
+    && ${spack_install} \
+        cfitsio ${spack_compilerspec} \
+    && ${spack_install} \
+        wcslib +cfitsio ${spack_compilerspec} \
+    && ${spack_install} \
+        libzmq ${spack_compilerspec} \
+    && ${spack_install} \
+        cppzmq ${spack_compilerspec} \
+    && ${spack_install} \
+        apr ${spack_compilerspec} \
+    && ${spack_install} \
+        apr-util ${spack_compilerspec} \
+    && ${spack_install} \
+        cppunit ${spack_compilerspec} \
+    && ${spack_install} \
+        log4cxx cxxstd=11 ^boost@1.80.0 +mpi +numpy +python +pic +system +thread +program_options +filesystem +signals +regex +chrono cxxstd=98 ${spack_compilerspec} \
+    && ${spack_install} \
+        mcpp ${spack_compilerspec} \
+    && ${spack_install} \
+        xerces-c ${spack_compilerspec} \
+    && echo "Finished"
+RUN echo " Building plotting packages " \
+    && ${spack_install} \
+        imagemagick ${spack_compilerspec} \
+    && echo "Finished"
+RUN echo "Update setup-env script to load packages installed by spack" \
     # generate script that will setup paths
     && echo "#!/bin/bash" > /usr/bin/setup-env.sh \
     && /root/spack/spack/bin/spack load --only package --sh \
@@ -76,8 +108,16 @@ RUN echo "Building astro packages with spack" \
         log4cxx \
         mcpp \
         xerces-c \
-        imagemagick \
         cmake \
+        >> /usr/bin/setup-env.sh \ 
+    # for imagemagick and other plotting also load dependencies
+    # to do this, first load previous environment to spack will auto add
+    # it to the script 
+    && . /usr/bin/setup-env.sh \
+    # now create new script with imagemagick loaded along with all deps
+    && echo "#!/bin/bash" > /usr/bin/setup-env.sh \
+    && /root/spack/spack/bin/spack load --sh \
+        imagemagick \
         >> /usr/bin/setup-env.sh \ 
     # clean up all spack related builds
     && /root/spack/spack/bin/spack clean -a \
@@ -93,7 +133,7 @@ RUN echo "Building astro packages with spack" \
 
 # install some python packages 
 RUN echo "Install some packages via pip" \
-    && pip install pandas astroquery
+    && pip install pandas astroquery \
     && echo "Finished"
 
 # and copy the recipe into the docker recipes directory

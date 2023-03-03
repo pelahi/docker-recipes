@@ -109,6 +109,8 @@ RUN mkdir -p /opt/ \
 # add mpi4py in the container 
 RUN pip install mpi4py
 
+RUN mkdir -p /container-scratch/
+
 # and copy the recipe into the docker recipes directory
 RUN mkdir -p /opt/docker-recipes/
 COPY buildmpichbase.dockerfile /opt/docker-recipes/

@@ -1,6 +1,6 @@
 # This recipe uses pawsey astrop-deps package 
 # to add the ASKAP TOS packages
-ARG BASE_IMAGE="pawsey:askap-astrodeps"
+ARG BASE_IMAGE="pawsey:casa"
 FROM ${BASE_IMAGE}
 
 # Record useful metadata: See https://docs.docker.com/config/labels-custom-metadata/
@@ -38,10 +38,21 @@ WORKDIR /
 # Set default python to python3:
 # this is specific to ubuntu
 # will need to generalize
-RUN update-alternatives --remove python /usr/bin/python2 \
-      && update-alternatives --install /usr/bin/python python /usr/bin/python3 ${PY3VERSION} \
-      && python3 -m pip install -U --force-reinstall pip \
-      && pip3 install setuptools
+# RUN echo "Fix python to point to desired version "\
+#     && update-alternatives --remove python /usr/bin/python2 \
+#     && update-alternatives --install /usr/bin/python python /usr/bin/python3 ${PY3VERSION} \
+#     && python3 -m pip install -U --force-reinstall pip \
+#     #&& pip3 install setuptools \
+#     && pip install setuptools \
+#     echo "Finished"
+
+
+# add libbz2-dev for zero ice to work with pip
+RUN echo "Starting apt-get installs" \
+    && apt-get update -qq \
+    && apt-get -y --no-install-recommends install \
+        libbz2-dev \
+    && echo "Finished"
 
 # You may want to define the repo Ver as an environment variable:
 ENV TOSTOOL_VERSION="${REPO_NAME}/${REPO_VERSION}"
@@ -66,7 +77,7 @@ RUN echo "Setting up ssh " \
     && echo "IdentityFile /root/.ssh/id_rsa" >> ~/.ssh/config \
     # && echo "Host *" >> /root/.ssh/config \
     # && echo "User ubuntu" >> /root/.ssh/config \
-    && echo "Host bitbucket.csiro.au\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config \
+    && echo -e "Host bitbucket.csiro.au\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config \
     && echo "Finished setting up SSH" \
     && echo "Now building askappy stuff " \
     && . /usr/bin/setup-env.sh \

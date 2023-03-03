@@ -1,6 +1,6 @@
 # This recipe uses pawsey astrop-deps package 
 # to add the ASKAP TOS packages
-ARG BASE_IMAGE="pawsey:askap-astrodeps"
+ARG BASE_IMAGE="pawsey:casa"
 FROM ${BASE_IMAGE}
 
 # Record useful metadata: See https://docs.docker.com/config/labels-custom-metadata/
@@ -25,9 +25,11 @@ WORKDIR /askap/data
 # silly fix for boost and log4cxx and logfilters where header files from boost are copied
 # to /usr/include/
 RUN echo "Silly fix" \
-    && boostdir=$(find /usr/bin/spack/ -name boost* | head -n 1) \
+    #&& boostdir=$(find /usr/bin/spack/ -name boost* | head -n 1) \
+    && boostdir=$(/root/spack/spack/bin/spack find -p boost | tail -n 1 | awk '{print $2}') \
     && cp -r ${boostdir}/include/boost /usr/include/ \
-    && gsldir=$(find /usr/bin/spack/ -name gsl* | grep gsl- | head -n 1) \
+    #&& gsldir=$(find /usr/bin/spack/ -name gsl* | grep gsl- | head -n 1) \
+    && gsldir=$(/root/spack/spack/bin/spack find -p gsl | tail -n 1 | awk '{print $2}') \
     && cp -r ${gsldir}/include/gsl /usr/include/ \
     && echo "Done"
 
@@ -39,7 +41,8 @@ ARG SSH_KEY_PUB
 ARG SSH_KNOWNHOSTS 
 ARG ASKAPSOFT_VERSION=1.9.1
 # ENV DEV_OVERRIDES=/home/askap-askapsoft/dev_overrides.txt 
-WORKDIR /home 
+USER root
+WORKDIR /home/
 RUN echo "Setting up ssh " \ 
     # setup ssh \ 
     && mkdir -p /root/.ssh && chmod 0700 /root/.ssh \
@@ -57,16 +60,17 @@ RUN echo "Setting up ssh " \
     # && ssh-keyscan bitbucket.csiro.au >> /root/.ssh/known_hostd \
     && chmod 700 /root/.ssh/id_rsa \ 
     && chown -R root:root /root/.ssh \ 
-    && echo "IdentityFile /root/.ssh/id_rsa" >> ~/.ssh/config \
+    && echo -e "IdentityFile /root/.ssh/id_rsa" >> ~/.ssh/config \
     # && echo "Host *" >> /root/.ssh/config \
     # && echo "User ubuntu" >> /root/.ssh/config \
-    && echo "Host bitbucket.csiro.au\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config \
-    && echo "Finished setting up SSH" \
+    && echo -e "Host bitbucket.csiro.au\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config \
+    && echo -e "Finished setting up SSH" \
     && echo "building askapsoft " \
     && . /usr/bin/setup-env.sh \
     # now clone and build yandasoft \
     && git clone ssh://git@bitbucket.csiro.au:7999/askapsdp/askap-askapsoft.git \
     # && dev_overrides.txt /home/askap-askapsoft \
+    && mkdir -p /hom/askap-askapsoft/ \
     && cd /home/askap-askapsoft/ \
     && git checkout ${ASKAPSOFT_VERSION} \
     # ***************** Modify askap-askapsoft - this is a hack \
@@ -81,7 +85,7 @@ RUN echo "Setting up ssh " \
     -DENABLE_OPENMP=YES \
     -DBUILD_ANALYSIS=ON -DBUILD_PIPELINE=ON -DBUILD_COMPONENTS=ON -DBUILD_SERVICES=ON -DUSE_SMS=ON \
     .. \
-    && make -j8 && make install \
+    && make && make install \
     && cd ../ && rm -rf build \
     && rm -rf /root/.ssh/* \
     && rm -rf /home/askap-askapsoft \

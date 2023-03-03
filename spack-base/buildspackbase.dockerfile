@@ -3,7 +3,7 @@
 # builds mpich and also some useful mpi packages for testing
 # The labels present here will need to be updated
 
-ARG BASE_IMAGE="pawsey:mpi-setonix"
+ARG BASE_IMAGE="pawsey:mpich-setonix"
 FROM ${BASE_IMAGE}
 
 LABEL org.opencontainers.image.created="2023-02"
@@ -19,6 +19,7 @@ LABEL org.opencontainers.image.base.name="pawsey/spack:mpibase:ubuntu20.04-mpich
 
 # build packages with spack
 ARG SPACK_VERSION=v0.19
+LABEL org.opencontainers.image.spack.version="${SPACK_VERSION}"
 WORKDIR /root/spack
 RUN echo "Setting up spack and building astro packages" \
     && git clone https://github.com/spack/spack \
@@ -73,8 +74,10 @@ config:\n\
 " >> ~/.spack/config.yaml \
     # run spack to boostrap
     && ./bin/spack spec nano \
+    # generate symbolic link to spack 
+    && ln -s /root/spack/spack/bin/spack /usr/bin/spack \
     && echo "Finished"
 
 # and copy recipe
-COPY add-spack.dockerfile /opt/docker-recipes/
+COPY buildspackbase.dockerfile /opt/docker-recipes/
 

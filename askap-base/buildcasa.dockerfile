@@ -19,6 +19,7 @@ LABEL org.opencontainers.image.base.name="pawsey/casa:ubuntu20.04-mpich-setonix"
 ARG CASACORE_VERSION=v3.5.0
 ARG CASAREST_VERSION=v1.8.1
 USER root
+
 # build casacore and casarest
 RUN echo "Building casacore " \
     && . /usr/bin/setup-env.sh \
@@ -35,7 +36,7 @@ RUN echo "Building casacore " \
     && cd casacore \
     && git checkout ${CASACORE_VERSION} \
     # patch casacore as it is missing gsl dep in cmake (this might only work for v3.5.0)
-    && echo 'diff --git a/CMakeLists.txt b/CMakeLists.txt\n\
+    && echo -e 'diff --git a/CMakeLists.txt b/CMakeLists.txt\n\
 index 7e48b3ff2..f49c7f1bb 100644\n\
 --- a/CMakeLists.txt\n\
 +++ b/CMakeLists.txt\n\
@@ -67,6 +68,7 @@ index 7e48b3ff2..f49c7f1bb 100644\n\
  message (STATUS "LAPACK library? ....... = ${LAPACK_LIBRARIES}")\n\
  message (STATUS "WCS library? .......... = ${WCSLIB_LIBRARIES}")\n\
  ' > casacore.cmake.patch \
+    && more casacore.cmake.patch \
     && git apply casacore.cmake.patch \
     && mkdir -p build \
     && cd build \
@@ -83,7 +85,7 @@ index 7e48b3ff2..f49c7f1bb 100644\n\
     && cd casarest \
     && git checkout ${CASAREST_VERSION} \
     # patch cmake for gsl (might only work for v1.8.1)
-    && echo 'diff --git a/CMakeLists.txt b/CMakeLists.txt\n\
+    && echo -e 'diff --git a/CMakeLists.txt b/CMakeLists.txt\n\
 index 7e3a9b5..1c8dc40 100644\n\
 --- a/CMakeLists.txt\n\
 +++ b/CMakeLists.txt\n\
@@ -116,7 +118,7 @@ index 7e3a9b5..1c8dc40 100644\n\
     && mkdir -p build \
     && cd build \
     && cmake -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_BUILD_TYPE=Release .. \
-    && make -j7 && make install \
+    && make -j16 && make install \
     && cd ../ && rm -rf build && cd ../ && rm -rf casarest \
     && pip install python-casacore \ 
     && echo "Finished"
